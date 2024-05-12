@@ -12,30 +12,18 @@ var connectionFactory = new ConnectionFactory
 //Baglantı aktifleştirme ve kanal açma 
 
 using IConnection connection = connectionFactory.CreateConnection();
-
 using IModel channel = connection.CreateModel();
 
 
-channel.QueueDeclare(queue: "example-queue", exclusive: false, autoDelete: false);
-
-EventingBasicConsumer consumer = new(channel);
-channel.BasicConsume(queue: "example-queue", autoAck: false, consumer)
-
-//BasicCancel
-var consumerTag = channel.BasicConsume(queue: "example-queue", autoAck: false, consumer);
-//channel.BasicCancel(consumerTag);
-
-
-
-consumer.Received += async (sender, e) =>
+channel.ExchangeDeclare(exchange: "direct-exchange-example", type: ExchangeType.Direct);
+var queueName = channel.QueueDeclare().QueueName;
+channel.QueueBind(queueName, "direct-exchange-example", "direct-queue-example");
+EventingBasicConsumer consumer = new EventingBasicConsumer(channel);
+channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
+consumer.Received += ConsumerReceived; 
+void ConsumerReceived(object? sender, BasicDeliverEventArgs e)
 {
-    //Kuyruga gelen mesaj işlendiği yerdir.
-    Console.WriteLine(Encoding.UTF8.GetString(e.Body.Span));
-    await Task.Delay(3000);
-    //İşlem onayı
-    channel.BasicAck(e.DeliveryTag, false);
-    //Datanın işlenmemesi istediğimiz de 
-    //channel.BasicNack(deliveryTag: e.DeliveryTag, multiple: false, requeue: true);
-};
-
+    var message = Encoding.UTF8.GetString(e.Body.Span);
+    Console.WriteLine(message);
+}
 Console.Read();
