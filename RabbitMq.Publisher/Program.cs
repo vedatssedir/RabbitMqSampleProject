@@ -19,22 +19,23 @@ using IModel channel = connection.CreateModel();
 //durable: kuyruktaki mesajların kalıcılıgını belirler.
 //exlusive = baska bir baglantı baglanamaz false olması gerekmektedir.
 //autoDelete: kuyruktaki mesaj tüketimi bittiginde silinmesi controldür.
-channel.QueueDeclare(queue: "example-queue", exclusive: false, autoDelete: false);
+channel.QueueDeclare(queue: "example-queue", exclusive: false, autoDelete: false, durable: true);
 
 //queue mesaj gönderme 
 
 //Rabbitmq kuyruga atacagı byte türünden kabul etmektedir.
 
+//Mesajları ve kuyrugu kalıcı hale getirir.
+IBasicProperties basicProperties = channel.CreateBasicProperties();
+basicProperties.Persistent = true;
 
 for (int i = 1; i < 100; i++)
 {
     await Task.Delay(200);
     byte[] message = Encoding.UTF8.GetBytes("Data: " + i);
-    channel.BasicPublish(exchange: "", routingKey: "example-queue", body: message);
+    channel.BasicPublish(exchange: "", routingKey: "example-queue", body: message, basicProperties: basicProperties);
 }
 
 Console.Read();
 
-
-//byte[] message = "vedatssedir"u8.ToArray();
 

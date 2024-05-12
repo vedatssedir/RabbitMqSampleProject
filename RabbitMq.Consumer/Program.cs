@@ -1,6 +1,4 @@
-﻿
-
-//Baglantı olusturma
+﻿//Baglantı olusturma
 
 using System.Text;
 using RabbitMQ.Client;
@@ -21,16 +19,23 @@ using IModel channel = connection.CreateModel();
 channel.QueueDeclare(queue: "example-queue", exclusive: false, autoDelete: false);
 
 EventingBasicConsumer consumer = new(channel);
+channel.BasicConsume(queue: "example-queue", autoAck: false, consumer)
+
+//BasicCancel
+var consumerTag = channel.BasicConsume(queue: "example-queue", autoAck: false, consumer);
+//channel.BasicCancel(consumerTag);
 
 
-channel.BasicConsume(queue: "example-queue", autoAck: false, consumer);
 
 consumer.Received += async (sender, e) =>
 {
     //Kuyruga gelen mesaj işlendiği yerdir.
     Console.WriteLine(Encoding.UTF8.GetString(e.Body.Span));
     await Task.Delay(3000);
+    //İşlem onayı
     channel.BasicAck(e.DeliveryTag, false);
+    //Datanın işlenmemesi istediğimiz de 
+    //channel.BasicNack(deliveryTag: e.DeliveryTag, multiple: false, requeue: true);
 };
 
 Console.Read();
